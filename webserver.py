@@ -1,5 +1,6 @@
 import re
 import uuid
+from urllib.parse import parse_qsl, urlparse  
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -10,10 +11,27 @@ redis_storage = redis.Redis()
 mappings = [
     (r"^/books?/(?P<book_id>\d+)$", "get_book"),
     (r"^/$", "index"),
+    (r"^/search", "search"),
 ]
 
 
 class WebResquestHandler(BaseHTTPRequestHandler):
+    @property
+    def query_data(self):
+        return dict(parse_qsl(self.url.query))
+
+    @property
+    def url(self):
+        return urlparse(self.path)
+
+    def search(self):
+        self.send_response(200)
+        self.send_header("content-type", "text/html")
+        self.end_headers()
+        search_terms = self.query_data['q'].split()
+        index_page = f"<h1>{search_terms}</h1>".encode("utf-8")
+        self.wfile.write(index_page)
+
     def cookies(self):
         return SimpleCookie(self.headers.get('Cookie'))
 
@@ -50,7 +68,14 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("content-type", "text/html")
         self.end_headers()
-        index_page = "<h1>Bienvenidos a la biblioteca!</h1>".encode("utf-8")
+        index_page = """
+        <h1>Bienvenidos a la biblioteca!</h1>
+        <form action="/search" method="GET">
+            <label for="q">Search</label>
+            <input type="text" name="q"/>
+            <input type="submit" value="Buscar libros"/>
+        </form>
+        """.encode("utf-8")
         self.wfile.write(index_page)
 
     def get_book(self, book_id):
