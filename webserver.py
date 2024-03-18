@@ -1,10 +1,12 @@
+#!/usr/bin/env python
+
 import re
 import uuid
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
 
-from load_pages import load_index
+from load_pages import load_index, INDEX_KEY
 
 from redis import Redis
 
@@ -41,11 +43,10 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.wfile.write(b"<h1>Not Found<h1>")
 
     def index(self):
-        html = redis.get("index")
+        html = redis.get(INDEX_KEY)
 
         if not html:
             html = load_index(redis)
-            redis.set("index", html)
 
         self.send_response(200)
         self.send_header("content-type", "text/html")
@@ -59,19 +60,6 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         search_terms = self.query_data["words"].split()
         index_page = f"<h1>{search_terms}</h1>".encode("utf-8")
         self.wfile.write(index_page)
-
-    def cookies(self):
-        return SimpleCookie(self.headers.get("Cookie"))
-
-    def get_session(self):
-        cookies = self.cookies()
-        return uuid.uuid4() if not cookies else cookies["session_id"].value
-
-    def write_session_cookie(self, session_id):
-        cookies = SimpleCookie()
-        cookies["session_id"] = session_id
-        cookies["session_id"]["max-age"] = 1000
-        self.send_header("Set-Cookie", cookies.output(header=""))
 
     def get_book(self, book_id: str):
         session_id = self.get_session()
@@ -90,6 +78,19 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         for book in books:
             decoded_book_id = book.decode("utf-8")
             self.wfile.write(f"<br>book:{decoded_book_id}".encode("utf-8"))
+
+    def cookies(self):
+        return SimpleCookie(self.headers.get("Cookie"))
+
+    def get_session(self):
+        cookies = self.cookies()
+        return uuid.uuid4() if not cookies else cookies["session_id"].value
+
+    def write_session_cookie(self, session_id):
+        cookies = SimpleCookie()
+        cookies["session_id"] = session_id
+        cookies["session_id"]["max-age"] = 1000
+        self.send_header("Set-Cookie", cookies.output(header=""))
 
 
 if __name__ == "__main__":

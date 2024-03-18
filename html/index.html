@@ -2,7 +2,7 @@
 <html lang="es-mx">
 
 <head>
-  <title>Books</title>
+  <title>Good Reads</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -10,13 +10,13 @@
 <body>
   <main>
 
-    <h1>Bienvenidos a la biblioteca!</h1>
-    <p>Encuentra libros interesantes.</p>
+    <h1>Good Reads</h1>
+    <p><b>Welcome to the Library!</b></p>
 
     <div>
       <form action="/search" method="GET">
-        <label for="search">Buscar</label>
-        <input id="search" type="search" name="words" required/>
+        <label for="search">Search</label>
+        <input id="search" type="search" name="words" required />
         <button type="submit">🔎</button>
       </form>
     </div>
@@ -24,8 +24,9 @@
 
     <hr>
 
-    <section id="books">
+    <section>
       <h2>Book Catalogue</h2>
+      <ul id="books-list"></ul>
     </section>
 
   </main>

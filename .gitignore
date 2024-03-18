@@ -1,3 +1,11 @@
+# Kaggle dataset
+archive.zip
+books.zip
+booksummaries.txt
+books.json.txt
+html/books/*.html
+!html/books/template.html
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
