@@ -1,26 +1,34 @@
 <!DOCTYPE html>
 <html lang="es-mx">
-    <head>
-        <title>Books</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="css/style.css" rel="stylesheet">
-    </head>
-    <body>
-    <h1>La Biblioteca</h1>       
-    
-    <article>
-            <h2><a href="\books\book1.html"> C# avanzado </a></h2>
-            <p> Pedro López, Juan Ruiz </p>
-            <br> 
-            <h2><a href="\books\book2.html"> El nuevo sistema operativo MS-DOS</a></h2>
-            <p> Joe Medina </p>
-            <br> 
-            <h2><a href="\books\book3.html"> La Metamorfosis </a></h2>
-            <p> Patrick Alvarado </p>
-            <br> 
-            <h2><a href="\books\book4.html"> La Danza de Hielo y Fuego </a></h2>
-            <p> R.R. González </p>
-    </article>
-    </body>
+
+<head>
+  <title>Books</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+  <main>
+
+    <h1>Bienvenidos a la biblioteca!</h1>
+    <p>Encuentra libros interesantes.</p>
+
+    <div>
+      <form action="/search" method="GET">
+        <label for="search">Buscar</label>
+        <input id="search" type="search" name="words" required/>
+        <button type="submit">🔎</button>
+      </form>
+    </div>
+    <br>
+
+    <hr>
+
+    <section id="books">
+      <h2>Book Catalogue</h2>
+    </section>
+
+  </main>
+</body>
+
 </html>
