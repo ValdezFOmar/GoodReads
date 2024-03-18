@@ -6,8 +6,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
 
-from load_pages import load_index, INDEX_KEY
-
+from .load_pages import INDEX_KEY, load_index
 from redis import Redis
 
 redis = Redis()
@@ -84,7 +83,8 @@ class WebResquestHandler(BaseHTTPRequestHandler):
 
     def get_session(self):
         cookies = self.cookies()
-        return uuid.uuid4() if not cookies else cookies["session_id"].value
+        key = "session_id"
+        return cookies[key].value if key in cookies else uuid.uuid4()
 
     def write_session_cookie(self, session_id):
         cookies = SimpleCookie()
@@ -93,7 +93,11 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.send_header("Set-Cookie", cookies.output(header=""))
 
 
-if __name__ == "__main__":
+def main():
     print("Server starting...")
     server = HTTPServer(("0.0.0.0", 8000), WebResquestHandler)
     server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

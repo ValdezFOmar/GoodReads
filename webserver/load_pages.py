@@ -4,14 +4,13 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from redis import Redis
 
-
 INDEX_KEY = ":index:"
 _parser = "html.parser"
 
 
 def load_index(redis: Redis, num_books: int = 10) -> bytes:
     """
-    Generates the index.html from the template at `html/index.html`
+    Generates an `index.html` from the template at `html/index.html`
     inserting the number of books specified (or less) by `num_books`
     as a preview with the following format:
 
@@ -44,14 +43,14 @@ def load_index(redis: Redis, num_books: int = 10) -> bytes:
 
         if tag := book_html.find(id="genres"):
             genres = tag.extract()
-            genres.name = "p" # pyright: ignore[reportAttributeAccessIssue]
+            genres.name = "p"  # pyright: ignore[reportAttributeAccessIssue]
             article.append(genres)
 
         li = book_html.new_tag("li")
         li.append(article)
         books_list.append(li)
 
-    html = index_html.prettify(encoding='utf-8')
+    html = index_html.prettify(encoding="utf-8")
     redis.set(INDEX_KEY, html)
     return html
 

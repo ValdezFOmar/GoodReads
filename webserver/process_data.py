@@ -3,10 +3,11 @@
 import argparse
 import json
 import sys
-import bs4
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterator
+
+import bs4
 
 # Information about the data schema
 # https://www.kaggle.com/datasets/ymaricar/cmu-book-summary-dataset/data
@@ -54,14 +55,14 @@ def save_to_json(books_summaries: Path, name: str):
 
 
 def generate_html(book: Book) -> bs4.BeautifulSoup:
-    with open(TEMPLATE,encoding='utf-8') as file:
+    with open(TEMPLATE, encoding="utf-8") as file:
         html = bs4.BeautifulSoup(file, "html.parser")
 
     html.head.title.string = book.title  # type: ignore
-    html.find(id="book-title").string = book.title # type: ignore
-    html.find(id="author").string = book.author # type: ignore
-    html.find(id="date").string = book.publication_date # type: ignore
-    html.find(id="summary").string = book.summary # type: ignore
+    html.find(id="book-title").string = book.title  # type: ignore
+    html.find(id="author").string = book.author  # type: ignore
+    html.find(id="date").string = book.publication_date  # type: ignore
+    html.find(id="summary").string = book.summary  # type: ignore
 
     genres_tag = html.find(id="genres")
     assert isinstance(genres_tag, bs4.Tag)
@@ -75,7 +76,7 @@ def generate_html(book: Book) -> bs4.BeautifulSoup:
 
 
 def generate_pages(data_path: str, max_pages: int):
-    with open(data_path, encoding='utf-8') as file:
+    with open(data_path, encoding="utf-8") as file:
         for i, data in enumerate(map(json.loads, file)):
             if i == max_pages:
                 break
