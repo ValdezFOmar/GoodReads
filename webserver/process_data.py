@@ -12,7 +12,8 @@ import bs4
 # Information about the data schema
 # https://www.kaggle.com/datasets/ymaricar/cmu-book-summary-dataset/data
 
-BOOKS_DIR = Path("html/books")
+HTML = Path("html")
+BOOKS_DIR = HTML / "books"
 TEMPLATE = BOOKS_DIR / "template.html"
 
 
@@ -49,6 +50,8 @@ def save_to_json(books_summaries: Path, name: str):
     """Saves each book in single line as a JSON object."""
     with open(name, "w") as file:
         for book in process_books(books_summaries):
+            if not book.author or not book.genres:
+                continue
             json.dump(book, file, default=asdict)
             file.write("\n")
             print("Saved book:", book.title)

@@ -6,7 +6,8 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
 
-from .load_pages import INDEX_KEY, load_index
+from . import load_pages
+from .load_pages import BOOKS_HASH, INDEX_KEY, WORD_KEY_PREFIX
 from redis import Redis
 
 redis = Redis()
@@ -45,7 +46,7 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         html = redis.get(INDEX_KEY)
 
         if not html:
-            html = load_index(redis)
+            html = load_pages.load_index(redis)
 
         self.send_response(200)
         self.send_header("content-type", "text/html")
@@ -53,12 +54,19 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.wfile.write(html)
 
     def search(self):
+        key = "words"
+        query = self.query_data
+
+        if key in query:
+            words = re.findall(r"\w+", query[key])
+        else:
+            words = []
+
+        html = load_pages.search_page(words, redis)
         self.send_response(200)
         self.send_header("content-type", "text/html")
         self.end_headers()
-        search_terms = self.query_data["words"].split()
-        index_page = f"<h1>{search_terms}</h1>".encode("utf-8")
-        self.wfile.write(index_page)
+        self.wfile.write(html)
 
     def get_book(self, book_id: str):
         session_id = self.get_session()
@@ -69,7 +77,7 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.write_session_cookie(session_id)
         self.end_headers()
 
-        book_info = redis.hget("books", book_id) or b"<h1>No existe el libro</h1>"
+        book_info = redis.hget(BOOKS_HASH, book_id) or b"<h1>Error 404: Book not Found!</h1>"
         book_info += f"Session ID:{session_id}".encode("utf-8")
         self.wfile.write(book_info)
 
