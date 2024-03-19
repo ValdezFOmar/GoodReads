@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
+import random
 import re
 import uuid
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlparse
 
-from . import load_pages
-from .load_pages import BOOKS_HASH, INDEX_KEY, WORD_KEY_PREFIX
 from redis import Redis
+
+from . import load_pages
+from .load_pages import BOOKS_HASH, INDEX_KEY
 
 redis = Redis()
 
@@ -38,9 +40,15 @@ class WebResquestHandler(BaseHTTPRequestHandler):
                 method = getattr(self, method_name)
                 method(**match.groupdict())
                 return
+        self.error_404()
+
+    def error_404(self, message: str = ""):
+        message = message or "Error 404: Page not Found!"
+        page = f"<h1>{message}<h1>".encode("utf-8")
         self.send_response(404)
+        self.send_header("content-type", "text/html")
         self.end_headers()
-        self.wfile.write(b"<h1>Not Found<h1>")
+        self.wfile.write(page)
 
     def index(self):
         html = redis.get(INDEX_KEY)
@@ -69,35 +77,65 @@ class WebResquestHandler(BaseHTTPRequestHandler):
         self.wfile.write(html)
 
     def get_book(self, book_id: str):
-        session_id = self.get_session()
-        redis.lpush(f"session:{session_id}", f"book:{book_id}")
+        session_id = self.get_session_id()
+        session_key = f"session:{session_id}"
+        self.add_book_to_session(session_key, book_id)
+
+        book_info = redis.hget(BOOKS_HASH, book_id)
+
+        if book_info is None:
+            self.error_404("Book not Found!")
+            return
 
         self.send_response(200)
         self.send_header("content-type", "text/html")
         self.write_session_cookie(session_id)
         self.end_headers()
-
-        book_info = redis.hget(BOOKS_HASH, book_id) or b"<h1>Error 404: Book not Found!</h1>"
-        book_info += f"Session ID:{session_id}".encode("utf-8")
         self.wfile.write(book_info)
 
-        books = redis.lrange(f"session:{session_id}", 0, -1)
-        for book in books:
-            decoded_book_id = book.decode("utf-8")
-            self.wfile.write(f"<br>book:{decoded_book_id}".encode("utf-8"))
+        if redis.llen(session_key) >= 3:
+            self.wfile.write(self.recommended_book(session_key))
 
+    def add_book_to_session(self, session_key: str, book_id: str):
+        id = redis.lindex(session_key, 0)
+
+        if id is None or id.decode("utf-8") != book_id:
+            redis.lpush(session_key, book_id)
+
+    def recommended_book(self, session_key) -> bytes:
+        books_seen = set(redis.lrange(session_key, 0, -1))
+        books_ids = redis.hkeys(BOOKS_HASH)
+
+
+        if len(books_seen) == len(books_ids):
+            random_id = random.choice(books_ids)
+        else:
+            while True:
+                random_id = random.choice(books_ids)
+                if random_id not in books_seen:
+                    break
+
+        return load_pages.generate_recommendation(random_id.decode("utf-8"), redis)
+
+    @property
     def cookies(self):
         return SimpleCookie(self.headers.get("Cookie"))
 
-    def get_session(self):
-        cookies = self.cookies()
-        key = "session_id"
-        return cookies[key].value if key in cookies else uuid.uuid4()
+    def get_session_id(self) -> str:
+        cookies = self.cookies
+        session_id = "session_id"
 
-    def write_session_cookie(self, session_id):
+        if session_id in cookies:
+            return cookies[session_id].value
+        else:
+            return str(uuid.uuid4())
+
+    def write_session_cookie(self, session_id: str):
         cookies = SimpleCookie()
         cookies["session_id"] = session_id
         cookies["session_id"]["max-age"] = 1000
+        cookies["session_id"]["httponly"] = True
+        cookies["session_id"]["samesite"] = "Strict"
         self.send_header("Set-Cookie", cookies.output(header=""))
 
 

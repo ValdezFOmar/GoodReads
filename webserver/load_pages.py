@@ -12,7 +12,7 @@ WORD_KEY_PREFIX = "word:"
 _parser = "html.parser"
 
 
-def load_index(redis: Redis, num_books: int = 10) -> bytes:
+def load_index(redis: Redis, num_books: int = -1) -> bytes:
     """
     Generates an `index.html` from the template at `html/index.html`
     inserting the number of books specified (or less) by `num_books`
@@ -107,6 +107,23 @@ def search_page(words: list[str], redis: Redis) -> bytes:
         ul.append(li)
 
     return template.encode("utf-8")
+
+
+def generate_recommendation(book_id: str, redis: Redis) -> bytes:
+    book_page = redis.hget(BOOKS_HASH, book_id)
+    assert book_page is not None
+
+    soup = BeautifulSoup(book_page, _parser)
+    title = soup.find(id="book-title")
+    assert isinstance(title, Tag)
+
+    book_title = title.get_text()
+    p_tag = soup.new_tag("p")
+    a_tag = soup.new_tag("a", href=f"/books/{book_id}")
+    a_tag.string = book_title
+    p_tag.append("Recommendation: ")
+    p_tag.append(a_tag)
+    return p_tag.encode()
 
 
 def load_dir(path: str, redis: Redis):
